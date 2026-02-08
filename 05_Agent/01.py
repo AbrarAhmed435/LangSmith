@@ -3,6 +3,7 @@ import requests
 from dotenv import load_dotenv
 from langchain.tools import tool
 from langchain.messages import HumanMessage, ToolMessage
+from langchain_community.tools import DuckDuckGoSearchRun
 from langchain.agents import create_agent
 import os
 
@@ -12,6 +13,13 @@ os.environ['LANGCHAIN_PROJECT']='Weather'
 
 API_KEY = os.getenv("WEATHER_API_KEY")  # keep key in .env
 BASE_URL = "http://api.weatherapi.com/v1"
+
+
+@tool("search_on_web",description="Search you query on web")
+def search_on_web(query:str):
+    search_tool=DuckDuckGoSearchRun()
+    result=search_tool.invoke(query)
+    return result
 
 
 @tool("get_current_weather",description="Know current weather of give location")
@@ -40,19 +48,27 @@ llm=HuggingFaceEndpoint(
 )
 model=ChatHuggingFace(llm=llm)
 
+
+
+
 agent=create_agent(
     model=model,
-    tools=[get_current_weather],
+    tools=[get_current_weather,search_on_web],
     system_prompt="You are helpfull Assistant"
 )
 
+user_query=input("Ask Anything! ")
+
+
 result=agent.invoke(
     {
-        "messages":[{"role":"user","content":"What clothes should i wear if i go out right now in auckland newzealand, Give answer in paragraph"}]
+        "messages":[{"role":"user","content":user_query}]
     }
 )
 
-
+from pprint import pprint
+# print(result['messages'])
+print()
 print(result['messages'][-1].content)
 
 
